@@ -41,6 +41,11 @@ def compare_files(left_name_env: str, right_name_env: str, name_dir: str) -> Non
     LOGGER.info(f"Finished searching in env '{right_name_env}'")
     LOGGER.info(f"Start comparing envs")
 
+    if len(env_left_list_of_files) == 0 and len(env_right_list_of_files) == 0:
+        raise ValueError("Both envs have zero results. "
+                         "Check your current path or TOML config file "
+                         "with non-existing folders to include")
+
     try:
         np.testing.assert_array_equal(env_left_list_of_files, env_right_list_of_files)
         LOGGER.info("SUCCESS")
