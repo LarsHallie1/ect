@@ -4,19 +4,22 @@ import os
 LOGGER = logging.getLogger(__name__)
 
 
-def get_last_string(string: str) -> str:
+def get_file_name_file_path_dict(list_of_strings: list) -> dict:
     """
-    Gets last element of string consisting of /.
+    Makes mapping of last two elements in string combined with / as key and the full
+    file path as value.
 
     Args:
-        string (str): string consisting of /.
+        list_of_strings (list): list of strings.
 
     Returns:
-        Last element of string.
+        Dictionary that contains file name and file path.
     """
-    last_string = string.split("/")[-1]
+    mapped_dict = {
+        "/".join(strings.split("/")[-2:]): strings for strings in list_of_strings
+    }
 
-    return last_string
+    return mapped_dict
 
 
 def get_root_path() -> str:
@@ -85,9 +88,9 @@ def get_files_from_dir(
             not_search = False
 
         if search and not not_search:
-            root_directory = get_last_string(root)
+            # root_directory = get_last_string(root)
             for file in files:
-                combined_file_path = root_directory + "/" + file
+                combined_file_path = root + "/" + file
                 list_of_file_paths.append(combined_file_path)
 
     return sorted(list_of_file_paths)
