@@ -2,9 +2,10 @@ import logging
 
 import numpy as np
 import toml
+import filecmp
 
 from ect import constants
-from ect.utils import get_files_from_dir, get_path_of_dir, get_root_path
+from ect.utils import get_files_from_dir, get_path_of_dir, get_root_path, get_file_name_file_path_dict
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,24 +47,24 @@ def compare_files(left_name_env: str, right_name_env: str, name_dir: str) -> Non
                          "Check your current path or TOML config file "
                          "with non-existing folders to include")
 
-    try:
-        np.testing.assert_array_equal(env_left_list_of_files, env_right_list_of_files)
-        LOGGER.info("SUCCESS")
+    env_left_file_name_path_dict = get_file_name_file_path_dict(env_left_list_of_files)
+    env_right_file_name_path_dict = get_file_name_file_path_dict(env_right_list_of_files)
 
-    except:
-        LOGGER.warning("FAILED")
+    LOGGER.info(f"Compare files in the two environments")
 
-        log_different_files(
-            list_env_left=env_right_list_of_files,
-            list_env_right=env_left_list_of_files,
-            name_env=left_name_env,
-        )
+    compare_list_of_files(
+        list_env_left=[*env_left_file_name_path_dict],
+        list_env_right=[*env_right_file_name_path_dict],
+        name_env_left=left_name_env,
+        name_env_right=right_name_env,
+    )
 
-        log_different_files(
-            list_env_left=env_left_list_of_files,
-            list_env_right=env_right_list_of_files,
-            name_env=right_name_env,
-        )
+    LOGGER.info(f"Compare file contents in the two environments")
+
+    compare_content_of_shared_files(
+        dict_env_left=env_left_file_name_path_dict,
+        dict_env_right=env_right_file_name_path_dict,
+    )
 
 
 def get_files_from_env(name_env: str, name_dir: str) -> list:
@@ -163,6 +164,72 @@ def get_toml_config(name_env: str, root_path: str) -> dict:
         return config
 
 
+def compare_content_of_shared_files(dict_env_left: dict, dict_env_right: dict) -> None:
+    """
+    Compares the content of files in the two environments.
+
+    Args:
+        dict_env_left (dict): dict of file names and paths from environment left.
+        dict_env_right (dict): dict of file names and paths from environment right.
+    """
+    files_with_different_content = []
+
+    shared_files = dict_env_left.keys() & dict_env_right.keys()
+    for file in shared_files:
+        path_left_file = dict_env_left[file]
+        path_right_file = dict_env_right[file]
+        comparison = filecmp.cmp(path_left_file, path_right_file, shallow=True)
+
+        if not comparison:
+            files_with_different_content.append(file)
+
+    if not files_with_different_content:
+        LOGGER.info("Compare file contents in the two environments: SUCCESS")
+
+    else:
+        LOGGER.warning("Compare file contents in the two environments: FAILED")
+        LOGGER.warning(f"The following files have different content:")
+        for file in files_with_different_content:
+            LOGGER.warning(f"----{file}")
+
+
+def compare_list_of_files(
+    list_env_left: list, list_env_right: list, name_env_left: str, name_env_right: str
+) -> None:
+    """
+    Compares the file names in the lists of the two environments.
+
+    Args:
+        list_env_left (list): list of files from environment left.
+        list_env_right (list): list of files from environment right.
+        name_env_left (str): name of left environment folder you want to compare.
+            Used for logging.
+        name_env_right (str): name of right environment folder you want to compare.
+            Used for logging.
+    """
+    try:
+        np.testing.assert_array_equal(
+            list_env_left,
+            list_env_right
+        )
+        LOGGER.info("Compare files in the two environments: SUCCESS")
+
+    except:
+        LOGGER.warning("Compare files in the two environments: FAILED")
+
+        log_different_files(
+            list_env_left=list_env_right,
+            list_env_right=list_env_left,
+            name_env=name_env_left,
+        )
+
+        log_different_files(
+            list_env_left=list_env_left,
+            list_env_right=list_env_right,
+            name_env=name_env_right,
+        )
+
+
 def log_different_files(
     list_env_left: list, list_env_right: list, name_env: str
 ) -> None:
@@ -175,12 +242,8 @@ def log_different_files(
         name_env (str): name of environment folder you want to compare.
             Used for logging.
     """
-
     diff_left = set(list_env_left).difference(list_env_right)
     if diff_left != set():
         LOGGER.warning(f"The following files are missing in env '{name_env}':")
         for file in diff_left:
             LOGGER.warning(f"----{file}")
-
-
-# https://stackoverflow.com/questions/254350/in-python-is-there-a-concise-way-of-comparing-whether-the-contents-of-two-text

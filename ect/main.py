@@ -19,9 +19,9 @@ def cli():
 
 
 @cli.command()
-@click.option("--env-left", help="left env you want to compare")
-@click.option("--env-right", help="right env you want to compare")
-@click.option("--name-dir", help="the directory name of the files you want to compare")
+@click.option("--env-left", required=True, type=str, help="left env you want to compare")
+@click.option("--env-right", required=True, type=str, help="right env you want to compare")
+@click.option("--name-dir", required=True, type=str, help="the directory name of the files you want to compare")
 def run(
     env_left: str,
     env_right: str,
